@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -37,15 +38,69 @@ class User extends Authenticatable
         ];
     }
 
+    // -------------------------------------------------------------------------
+    // Scopes
+    // -------------------------------------------------------------------------
+
+    /** Filter berdasarkan paket: User::onPlan('pro')->get() */
+    public function scopeOnPlan(Builder $query, string $plan): void
+    {
+        $query->where('subscription_plan', $plan);
+    }
+
+    /**
+     * Subscription yang akan kadaluarsa dalam N hari ke depan.
+     * Berguna untuk cron job kirim notifikasi "langganan hampir habis".
+     */
+    public function scopeSubscriptionExpiringSoon(Builder $query, int $days = 7): void
+    {
+        $query->whereNotNull('subscription_expires_at')
+              ->whereBetween('subscription_expires_at', [now(), now()->addDays($days)]);
+    }
+
+    /** User dengan subscription aktif (non-free yang belum expired). */
+    public function scopeWithActiveSubscription(Builder $query): void
+    {
+        $query->where(function (Builder $q) {
+            $q->where('subscription_plan', 'free')
+              ->orWhere(function (Builder $inner) {
+                  $inner->where('subscription_plan', '!=', 'free')
+                        ->where('subscription_expires_at', '>', now());
+              });
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
     public function hasActiveSubscription(): bool
     {
         if ($this->subscription_plan === 'free') {
             return true;
         }
 
-        return $this->subscription_expires_at !== null
-            && $this->subscription_expires_at->isFuture();
+        return $this->subscription_expires_at?->isFuture() ?? false;
     }
+
+    public function isOnPlan(string $plan): bool
+    {
+        return $this->subscription_plan === $plan;
+    }
+
+    /** Sisa hari subscription; null untuk free tier. */
+    public function subscriptionDaysLeft(): ?int
+    {
+        if ($this->subscription_plan === 'free' || $this->subscription_expires_at === null) {
+            return null;
+        }
+
+        return max(0, (int) now()->diffInDays($this->subscription_expires_at, false));
+    }
+
+    // -------------------------------------------------------------------------
+    // Relationships
+    // -------------------------------------------------------------------------
 
     public function events(): HasMany
     {

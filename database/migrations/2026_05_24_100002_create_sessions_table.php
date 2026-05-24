@@ -8,7 +8,10 @@
 //    mensyaratkan registrasi; tamu hanya scan QR dan langsung pakai booth
 // 3. session_token VARCHAR(64) UNIQUE — token acak untuk URL share atau akses ulang
 //    tanpa login; lebih aman dari ID incremental yang bisa ditebak
-// 4. started_at TIMESTAMP (NOT NULL) — dicatat saat guest pertama kali buka booth
+// 4. started_at TIMESTAMP useCurrent() — dicatat saat guest pertama kali buka booth.
+//    Wajib pakai useCurrent() agar MySQL tidak menambahkan ON UPDATE CURRENT_TIMESTAMP
+//    secara implisit (perilaku default MySQL untuk kolom TIMESTAMP pertama yang NOT NULL).
+//    Tanpa ini, setiap UPDATE row (misal: set ended_at) akan overwrite started_at ke NOW().
 // 5. ended_at TIMESTAMP NULLABLE — null = sesi masih aktif; filled = sesi selesai
 //    Durasi sesi = ended_at - started_at (berguna untuk analitik)
 // 6. cascadeOnDelete pada event_id — sesi tidak punya makna tanpa eventnya
@@ -34,7 +37,7 @@ return new class extends Migration
             $table->string('guest_email')->nullable();
             $table->string('guest_phone', 20)->nullable();
             $table->string('session_token', 64)->unique();
-            $table->timestamp('started_at');
+            $table->timestamp('started_at')->useCurrent();
             $table->timestamp('ended_at')->nullable();
 
             // Query: daftar sesi di suatu event, diurutkan kronologis

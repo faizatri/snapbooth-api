@@ -60,6 +60,22 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2 — S3-compatible storage
+        // R2_URL      = public CDN (misal https://cdn.snapbooth.com) — opsional
+        // R2_ENDPOINT = https://{accountId}.r2.cloudflarestorage.com
+        'r2' => [
+            'driver'                  => 's3',
+            'key'                     => env('R2_ACCESS_KEY_ID'),
+            'secret'                  => env('R2_SECRET_ACCESS_KEY'),
+            'region'                  => env('R2_DEFAULT_REGION', 'auto'),
+            'bucket'                  => env('R2_BUCKET', 'snapbooth'),
+            'url'                     => env('R2_URL'),
+            'endpoint'                => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw'                   => true,
+            'report'                  => false,
+        ],
+
     ],
 
     /*
