@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // URL of the frontend gallery page; QR codes point here.
+    // Example: https://booth.example.com/gallery
+    'gallery_url' => env('GALLERY_URL', env('APP_URL', 'http://localhost') . '/gallery'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

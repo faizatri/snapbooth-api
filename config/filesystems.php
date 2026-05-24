@@ -17,6 +17,24 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Storage Disk
+    |--------------------------------------------------------------------------
+    |
+    | This value controls which disk StorageService uses for user-uploaded
+    | files (photos, template previews, etc.).
+    |
+    | local_public — stores files in storage/app/public/snapbooth and serves
+    |                them via APP_URL/storage/snapbooth. No external credentials
+    |                needed; use this for development and testing.
+    |
+    | r2           — uploads to Cloudflare R2. Requires R2_* vars in .env.
+    |
+    */
+
+    'storage_disk' => env('STORAGE_DISK', 'r2'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -45,6 +63,19 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+        ],
+
+        // ── Local testing disk ────────────────────────────────────────────────
+        // Drop-in replacement for R2 when developing locally.
+        // Run `php artisan storage:link` once to activate the symlink.
+        // Files land in storage/app/public/snapbooth/** and are served at
+        // APP_URL/storage/snapbooth/**  — same path structure as R2.
+        'local_public' => [
+            'driver'     => 'local',
+            'root'       => storage_path('app/public/snapbooth'),
+            'url'        => env('APP_URL', 'http://localhost:8000') . '/storage/snapbooth',
+            'visibility' => 'public',
+            'throw'      => true,
         ],
 
         's3' => [

@@ -16,19 +16,23 @@ class Photo extends Model
         'session_id',
         'event_id',
         'template_id',
+        'shot_number',
         'file_path',
         'file_url',
+        'thumbnail_path',
         'is_shared',
+        'is_final',
         'metadata',
     ];
 
     protected function casts(): array
     {
         return [
-            'is_shared'  => 'boolean',
-            'metadata'   => 'array',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
+            'is_shared'   => 'boolean',
+            'is_final'    => 'boolean',
+            'metadata'    => 'array',
+            'created_at'  => 'datetime',
+            'updated_at'  => 'datetime',
         ];
     }
 
@@ -51,17 +55,41 @@ class Photo extends Model
      * Nilai kolom DB ($value) di-ignore karena bisa kadaluarsa (signed URL).
      * Simpan $file_path sebagai single source of truth, file_url hanya cache.
      */
+    protected function thumbnailUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function (): ?string {
+                if (! $this->thumbnail_path) {
+                    return null;
+                }
+
+                $diskName = config('filesystems.storage_disk', 'r2');
+                $cdnUrl   = config("filesystems.disks.{$diskName}.url");
+
+                if ($cdnUrl) {
+                    return rtrim($cdnUrl, '/') . '/' . ltrim($this->thumbnail_path, '/');
+                }
+
+                return Storage::disk($diskName)->temporaryUrl(
+                    $this->thumbnail_path,
+                    now()->addMinutes(60)
+                );
+            }
+        );
+    }
+
     protected function fileUrl(): Attribute
     {
         return Attribute::make(
             get: function (?string $value): string {
-                $r2CdnUrl = config('filesystems.disks.r2.url');
+                $diskName = config('filesystems.storage_disk', 'r2');
+                $cdnUrl   = config("filesystems.disks.{$diskName}.url");
 
-                if ($r2CdnUrl) {
-                    return rtrim($r2CdnUrl, '/') . '/' . ltrim($this->file_path, '/');
+                if ($cdnUrl) {
+                    return rtrim($cdnUrl, '/') . '/' . ltrim($this->file_path, '/');
                 }
 
-                return Storage::disk('r2')->temporaryUrl(
+                return Storage::disk($diskName)->temporaryUrl(
                     $this->file_path,
                     now()->addMinutes(60)
                 );
@@ -115,7 +143,8 @@ class Photo extends Model
      */
     public function signedUrl(int $minutes = 60): string
     {
-        return Storage::disk('r2')->temporaryUrl(
+        $diskName = config('filesystems.storage_disk', 'r2');
+        return Storage::disk($diskName)->temporaryUrl(
             $this->file_path,
             now()->addMinutes($minutes)
         );

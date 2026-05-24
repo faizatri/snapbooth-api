@@ -19,8 +19,10 @@ class Session extends Model
         'guest_email',
         'guest_phone',
         'session_token',
+        'share_token',
         'started_at',
         'ended_at',
+        'expires_at',
     ];
 
     protected function casts(): array
@@ -28,6 +30,7 @@ class Session extends Model
         return [
             'started_at' => 'datetime',
             'ended_at'   => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 
@@ -40,6 +43,10 @@ class Session extends Model
 
             if (empty($session->started_at)) {
                 $session->started_at = now();
+            }
+
+            if (empty($session->expires_at)) {
+                $session->expires_at = now()->addHours(2);
             }
         });
     }
@@ -79,12 +86,33 @@ class Session extends Model
         return $this->ended_at === null;
     }
 
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
     /** Tutup sesi dan catat waktu selesai. */
     public function end(): void
     {
         if ($this->isActive()) {
             $this->update(['ended_at' => now()]);
         }
+    }
+
+    /**
+     * Selesaikan sesi: tandai foto-foto terpilih sebagai final,
+     * generate share_token publik, dan set ended_at.
+     */
+    public function complete(array $selectedPhotoIds): void
+    {
+        Photo::where('session_id', $this->id)
+             ->whereIn('id', $selectedPhotoIds)
+             ->update(['is_final' => true]);
+
+        $this->update([
+            'ended_at'    => now(),
+            'share_token' => Str::random(64),
+        ]);
     }
 
     /** Durasi sesi dalam detik; null jika sesi masih aktif. */

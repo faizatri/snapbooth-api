@@ -1,0 +1,219 @@
+### SnapBooth Auth API — VS Code REST Client
+### Extension: humao.rest-client
+### Jalankan tiap request dengan klik "Send Request" di atas baris ###
+###
+### Urutan testing yang disarankan:
+###   1. Register (sukses)     → simpan token di @token
+###   2. Login (sukses)        → verifikasi token baru
+###   3. GET /me (sukses)      → pakai token dari login
+###   4. Semua kasus gagal
+###   5. Logout
+
+@baseUrl = http://localhost:8000/api/v1
+@contentType = application/json
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Ganti nilai ini setelah dapat token dari Register atau Login
+# @name login
+# Setelah request login sukses, VS Code REST Client bisa dipakai:
+#   {{login.response.body.data.token}}
+# ──────────────────────────────────────────────────────────────────────────────
+@token = PASTE_TOKEN_HERE
+
+
+# ==============================================================================
+# 1. REGISTER
+# ==============================================================================
+
+### 1a. Register — Sukses (201)
+# Harap diubah: gunakan email unik setiap kali test ulang
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Faiza Tri",
+  "email": "faiza@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+###
+
+### 1b. Register — Email sudah terdaftar (422)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Faiza Tri",
+  "email": "faiza@example.com",
+  "password": "password123",
+  "password_confirmation": "password123"
+}
+
+###
+
+### 1c. Register — Password tidak cocok (422)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "Faiza Tri",
+  "email": "new@example.com",
+  "password": "password123",
+  "password_confirmation": "wrongpassword"
+}
+
+###
+
+### 1d. Register — Field wajib kosong (422)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+  "name": "",
+  "email": "not-an-email",
+  "password": "short"
+}
+
+###
+
+### 1e. Register — Body kosong (422)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{}
+
+###
+
+
+# ==============================================================================
+# 2. LOGIN
+# ==============================================================================
+
+### 2a. Login — Sukses (200)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "faiza@example.com",
+  "password": "password123"
+}
+
+###
+
+### 2b. Login — Password salah (401)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "faiza@example.com",
+  "password": "wrongpassword"
+}
+
+###
+
+### 2c. Login — Email tidak terdaftar (401)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "tidakada@example.com",
+  "password": "password123"
+}
+
+###
+
+### 2d. Login — Format email salah (422)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "bukan-email",
+  "password": "password123"
+}
+
+###
+
+### 2e. Login — Body kosong (422)
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{}
+
+###
+
+
+# ==============================================================================
+# 3. GET /ME  (protected)
+# ==============================================================================
+
+### 3a. GET /me — Sukses (200)
+# Ganti @token di atas dengan token dari Login/Register
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+###
+
+### 3b. GET /me — Tanpa token (401)
+GET {{baseUrl}}/auth/me
+
+###
+
+### 3c. GET /me — Token salah / kadaluarsa (401)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer token_palsu_tidak_valid_123
+
+###
+
+
+# ==============================================================================
+# 4. LOGOUT
+# ==============================================================================
+
+### 4a. Logout — Sukses, hapus token saat ini (200)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+###
+
+### 4b. Logout — Verifikasi: token sudah tidak berlaku (401)
+# Jalankan SETELAH 4a — token yang sama harus ditolak
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+###
+
+### 4c. Logout — Tanpa token (401)
+POST {{baseUrl}}/auth/logout
+
+###
+
+
+# ==============================================================================
+# 5. LOGOUT ALL  (bonus — hapus semua sesi)
+# ==============================================================================
+
+### 5a. Login ulang untuk dapat token baru
+# @name loginUlang
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "faiza@example.com",
+  "password": "password123"
+}
+
+###
+
+### 5b. Logout All — Hapus semua token (200)
+POST {{baseUrl}}/auth/logout-all
+Authorization: Bearer {{token}}
+
+###
+
+### 5c. Verifikasi: token lama sudah tidak bisa dipakai (401)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+###
