@@ -9,21 +9,26 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Photo extends Model
 {
     protected $fillable = [
+        'session_id',
         'event_id',
-        'frame_id',
+        'template_id',
         'file_path',
-        'thumbnail_path',
-        'status',
+        'file_url',
+        'is_shared',
         'metadata',
-        'taken_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'metadata' => 'array',
-            'taken_at' => 'datetime',
+            'is_shared' => 'boolean',
+            'metadata'  => 'array',
         ];
+    }
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(Session::class);
     }
 
     public function event(): BelongsTo
@@ -31,13 +36,13 @@ class Photo extends Model
         return $this->belongsTo(Event::class);
     }
 
-    public function frame(): BelongsTo
+    public function template(): BelongsTo
     {
-        return $this->belongsTo(Frame::class);
+        return $this->belongsTo(Template::class);
     }
 
-    public function printJobs(): HasMany
+    public function shares(): HasMany
     {
-        return $this->hasMany(PrintJob::class);
+        return $this->hasMany(Share::class);
     }
 }

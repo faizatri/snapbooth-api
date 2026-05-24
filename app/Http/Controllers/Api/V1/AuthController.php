@@ -17,11 +17,10 @@ class AuthController extends Controller
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'phone'    => $request->phone,
-            'role'     => 'customer',
+            'name'              => $request->name,
+            'email'             => $request->email,
+            'password'          => Hash::make($request->password),
+            'subscription_plan' => 'free',
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -40,11 +39,6 @@ class AuthController extends Controller
 
         /** @var User $user */
         $user = Auth::user();
-
-        if (! $user->is_active) {
-            Auth::logout();
-            return $this->forbidden('Your account has been deactivated');
-        }
 
         $user->tokens()->where('name', 'auth_token')->delete();
 

@@ -5,28 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Event extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'user_id',
-        'title',
+        'name',
         'slug',
-        'description',
-        'event_date',
-        'venue',
-        'status',
-        'max_photos',
-        'access_code',
-        'settings',
+        'date',
+        'location',
+        'booth_config',
+        'is_active',
     ];
 
     protected function casts(): array
     {
         return [
-            'event_date' => 'datetime',
-            'settings'   => 'array',
+            'date'        => 'date',
+            'booth_config' => 'array',
+            'is_active'   => 'boolean',
         ];
     }
 
@@ -34,10 +35,7 @@ class Event extends Model
     {
         static::creating(function (Event $event) {
             if (empty($event->slug)) {
-                $event->slug = Str::slug($event->title) . '-' . Str::random(6);
-            }
-            if (empty($event->access_code)) {
-                $event->access_code = strtoupper(Str::random(8));
+                $event->slug = Str::slug($event->name) . '-' . Str::random(6);
             }
         });
     }
@@ -47,13 +45,13 @@ class Event extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(Session::class);
+    }
+
     public function photos(): HasMany
     {
         return $this->hasMany(Photo::class);
-    }
-
-    public function printJobs(): HasMany
-    {
-        return $this->hasMany(PrintJob::class);
     }
 }

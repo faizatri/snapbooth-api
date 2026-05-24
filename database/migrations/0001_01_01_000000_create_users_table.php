@@ -1,14 +1,20 @@
 <?php
 
+// Keputusan desain:
+// 1. subscription_plan pakai ENUM bukan string — set terbatas, MySQL index lebih efisien
+// 2. subscription_expires_at nullable — null = free tier atau lifetime, tidak perlu sentinel value
+// 3. softDeletes — user yang "dihapus" tetap bisa dijadikan owner historis event/photo
+//    (relasi tidak putus), data bisa dipulihkan oleh admin
+// 4. Hapus Laravel web-sessions dari sini — project ini pure API token-based (Sanctum),
+//    nama 'sessions' dipakai oleh tabel photo booth di migration terpisah
+// 5. Index pada subscription_expires_at — untuk cron job harian yang cek subscription kadaluarsa
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -17,12 +23,13 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('role', ['admin', 'operator', 'customer'])->default('customer');
-            $table->string('phone', 20)->nullable();
-            $table->string('avatar')->nullable();
-            $table->boolean('is_active')->default(true);
+            $table->enum('subscription_plan', ['free', 'basic', 'pro', 'enterprise'])->default('free');
+            $table->timestamp('subscription_expires_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('subscription_expires_at');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -30,24 +37,11 @@ return new class extends Migration
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
-
-        Schema::create('sessions', function (Blueprint $table) {
-            $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
-            $table->string('ip_address', 45)->nullable();
-            $table->text('user_agent')->nullable();
-            $table->longText('payload');
-            $table->integer('last_activity')->index();
-        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
-        Schema::dropIfExists('sessions');
+        Schema::dropIfExists('users');
     }
 };
