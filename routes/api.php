@@ -53,7 +53,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/{slug}',             'show');               // lookup by slug
             Route::put('/{event}',            'update');             // model binding by ID
             Route::delete('/{event}',         'destroy');            // model binding by ID
-            Route::post('/{event}/activate',  'activate');           // toggle aktif/nonaktif
+            Route::patch('/{event}/toggle-active', 'activate');      // toggle aktif/nonaktif
+            Route::get('/{event}/sessions',   'sessions');           // sessions + photos per event
         });
 
         // Templates

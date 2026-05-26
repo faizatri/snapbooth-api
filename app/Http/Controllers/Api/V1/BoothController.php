@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Booth\CompleteSessionRequest;
 use App\Http\Requests\Booth\StartSessionRequest;
 use App\Http\Requests\Booth\UploadPhotoRequest;
+use App\Events\PhotoUploaded;
+use App\Events\SessionCompleted;
 use App\Exceptions\ImageProcessingException;
 use App\Models\Event;
 use App\Models\Photo;
@@ -122,6 +124,8 @@ class BoothController extends Controller
             ],
         ]);
 
+        PhotoUploaded::dispatch($photo);
+
         return $this->created([
             'photo_id'      => $photo->id,
             'processed_url' => $photo->file_url,
@@ -168,6 +172,8 @@ class BoothController extends Controller
                 'processed_url' => $p->file_url,
                 'thumbnail_url' => $p->thumbnail_url,
             ]);
+
+        SessionCompleted::dispatch($session->fresh());
 
         return $this->success([
             'session_id'   => $session->id,

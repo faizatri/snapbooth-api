@@ -16,6 +16,7 @@ class SessionResource extends JsonResource
             'guest_email'   => $this->guest_email,
             'guest_phone'   => $this->guest_phone,
             'is_active'     => $this->isActive(),
+            'created_at'    => $this->started_at?->toISOString(),
             'started_at'    => $this->started_at?->toISOString(),
             'ended_at'      => $this->ended_at?->toISOString(),
             'duration'      => $this->durationForHumans(),

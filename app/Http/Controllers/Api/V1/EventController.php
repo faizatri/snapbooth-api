@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Event\StoreEventRequest;
 use App\Http\Requests\Event\UpdateEventRequest;
 use App\Http\Resources\EventResource;
+use App\Http\Resources\SessionResource;
 use App\Models\Event;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,11 +54,14 @@ class EventController extends Controller
     }
 
     /**
-     * GET /api/v1/events/{slug}
+     * GET /api/v1/events/{identifier}
+     * Accepts either a numeric ID or a slug string.
      */
-    public function show(Request $request, string $slug): JsonResponse
+    public function show(Request $request, string $identifier): JsonResponse
     {
-        $event = Event::where('slug', $slug)->first();
+        $event = is_numeric($identifier)
+            ? Event::find((int) $identifier)
+            : Event::where('slug', $identifier)->first();
 
         if (! $event) {
             return $this->notFound('Event not found');
@@ -96,6 +100,26 @@ class EventController extends Controller
         $event->delete();
 
         return $this->success(null, 'Event deleted successfully');
+    }
+
+    /**
+     * GET /api/v1/events/{event}/sessions
+     * Returns all sessions with their photos for the given event.
+     */
+    public function sessions(Request $request, Event $event): JsonResponse
+    {
+        if (! $request->user()->can('view', $event)) {
+            return $this->forbidden();
+        }
+
+        $sessions = $event->sessions()
+            ->with('photos')
+            ->latest('started_at')
+            ->get();
+
+        $sessions->each(fn ($session) => $session->setRelation('event', $event));
+
+        return $this->success(SessionResource::collection($sessions));
     }
 
     /**
