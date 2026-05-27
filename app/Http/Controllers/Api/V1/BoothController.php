@@ -47,10 +47,24 @@ class BoothController extends Controller
             'guest_email' => $request->guest_email,
         ]);
 
+        $templateConfig = $this->resolveTemplateConfig($event);
+
         return $this->created([
             'session_id'    => $session->id,
             'session_token' => $session->session_token,
             'expires_at'    => $session->expires_at->toISOString(),
+            'event'         => [
+                'id'                => $event->id,
+                'name'              => $event->name,
+                'slug'              => $event->slug,
+                'max_photos'        => $event->boothConfig('photos_per_session', 4),
+                'countdown_seconds' => $event->boothConfig('countdown', 3),
+            ],
+            'template'      => $templateConfig ? [
+                'overlay_url'      => $templateConfig['overlay_url'] ?? null,
+                'background_color' => $templateConfig['background_color'] ?? '#1a1a1a',
+                'layout'           => $templateConfig['layout'] ?? 'strip',
+            ] : null,
             'event_config'  => $event->booth_config ?? [],
         ], 'Session started');
     }
