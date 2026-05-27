@@ -134,7 +134,7 @@ class BoothController extends Controller
         PhotoUploaded::dispatch($photo);
 
         return $this->created([
-            'photo_id'      => $photo->id,
+            'id'            => $photo->id,
             'processed_url' => $photo->file_url,
             'thumbnail_url' => $photo->thumbnail_url,
         ], 'Photo uploaded');
