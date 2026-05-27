@@ -57,6 +57,7 @@ class TemplateController extends Controller
 
         $data            = $request->validated();
         $data['user_id'] = $request->user()->id;
+        $data['config'] ??= [];
 
         if ($request->hasFile('preview')) {
             $path              = $this->storage->uploadPreview($request->file('preview'));
