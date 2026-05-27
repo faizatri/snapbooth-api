@@ -78,6 +78,17 @@ return [
             'throw'      => true,
         ],
 
+        // ── Production disk for shared hosting (no symlink support) ───────────
+        // Stores files directly inside public/storage/snapbooth/ so they are
+        // accessible via web server without needing a symlink.
+        'direct_public' => [
+            'driver'     => 'local',
+            'root'       => public_path('storage/snapbooth'),
+            'url'        => env('APP_URL', 'http://localhost:8000') . '/storage/snapbooth',
+            'visibility' => 'public',
+            'throw'      => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
