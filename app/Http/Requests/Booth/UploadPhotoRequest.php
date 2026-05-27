@@ -15,16 +15,8 @@ class UploadPhotoRequest extends FormRequest
     {
         return [
             'session_token' => ['required', 'string', 'size:64'],
-            'photo'         => ['required', 'string'],
-            'shot_number'   => ['required', 'integer', 'min:1', 'max:99'],
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'photo.required' => 'Photo data (base64) is required.',
-            'photo.string'   => 'Photo must be a base64-encoded string.',
+            'photo'         => ['required'],
+            'shot_number'   => ['sometimes', 'integer', 'min:1', 'max:99'],
         ];
     }
 }

@@ -57,7 +57,7 @@ class BoothController extends Controller
 
     // =========================================================================
     // POST /api/v1/booth/upload-photo
-    // Body: { session_token, photo (base64), shot_number }
+    // Body: { session_token, photo (file or base64), shot_number? }
     // =========================================================================
 
     public function uploadPhoto(UploadPhotoRequest $request): JsonResponse
@@ -69,19 +69,26 @@ class BoothController extends Controller
 
         $event = $session->event;
 
-        $maxPhotos = $event->boothConfig('photos_per_session', 10);
-        if (Photo::where('session_id', $session->id)->count() >= $maxPhotos) {
+        $existingCount = Photo::where('session_id', $session->id)->count();
+        $maxPhotos     = $event->boothConfig('photos_per_session', 10);
+        if ($existingCount >= $maxPhotos) {
             return $this->error("Maximum {$maxPhotos} photos per session reached", null, 422);
         }
 
-        $raw = $this->decodeBase64($request->photo);
-        if ($raw === null) {
-            return $this->error('Invalid base64 image data', null, 422);
-        }
+        $shotNumber = $request->integer('shot_number', $existingCount + 1);
 
-        // Tulis bytes ke temp file agar Intervention bisa membacanya
+        // Accept either a file upload or a base64 string
         $srcPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'booth_src_' . \Illuminate\Support\Str::uuid() . '.jpg';
-        file_put_contents($srcPath, $raw);
+
+        if ($request->hasFile('photo')) {
+            $request->file('photo')->move(dirname($srcPath), basename($srcPath));
+        } else {
+            $raw = $this->decodeBase64((string) $request->input('photo'));
+            if ($raw === null) {
+                return $this->error('Invalid image data', null, 422);
+            }
+            file_put_contents($srcPath, $raw);
+        }
 
         try {
             $result = $this->imageProcessor->processPhoto($srcPath, [
@@ -112,7 +119,7 @@ class BoothController extends Controller
             'session_id'     => $session->id,
             'event_id'       => $event->id,
             'template_id'    => $event->boothConfig('template_id'),
-            'shot_number'    => $request->shot_number,
+            'shot_number'    => $shotNumber,
             'file_path'      => $path,
             'file_url'       => $url,
             'thumbnail_path' => $thumbPath,
