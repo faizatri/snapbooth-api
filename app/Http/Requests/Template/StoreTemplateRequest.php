@@ -20,7 +20,7 @@ class StoreTemplateRequest extends FormRequest
             'preview'   => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
             // ── Config object ─────────────────────────────────────────────────
-            'config'                   => ['required', 'array'],
+            'config'                   => ['nullable', 'array'],
             'config.width'             => ['nullable', 'integer', 'min:1', 'max:9999'],
             'config.height'            => ['nullable', 'integer', 'min:1', 'max:9999'],
             'config.layout'            => ['nullable', 'string', 'max:50'],
